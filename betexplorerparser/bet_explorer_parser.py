@@ -1,6 +1,8 @@
 import asyncio
 
+from betexplorerparser.parsers.result_parser import ResultParser
 from betexplorerparser.utils.league_list_keeper import LeagueListKeeper
+from betexplorerparser.utils.request import Request
 from betexplorerparser.utils.url_maker import UrlMaker
 
 
@@ -11,11 +13,18 @@ class BetExplorerParser:
         self._url_maker = UrlMaker()
         self._request = Request()
 
-    def parse_all(self) -> None:
+        self._result_parser = ResultParser()
+
+    def parse_all(self, output_dir: str) -> None:
         leagues = self._league_list_keeper.get_leagues()
         urls = self._url_maker.get_result_urls(leagues)
-        pages = self._request.get(urls)
-        pages = asyncio.run(self._parse_async)
+        pages = self._request.get(urls, desc="Result requests")
+        parsed_pages = []
+        for page_set in pages:
+            if page_set:
+                parsed_pages.append(self._result_parser.parse(*page_set))
+
+
 
 
 

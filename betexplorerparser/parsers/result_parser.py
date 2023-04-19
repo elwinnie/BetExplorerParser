@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup
 
 
 class ResultParser:
-    def parse(self, result_page: str, fixtures_page: str = None) -> dict:
+    def parse(self, result_page: str, fixtures_page: str) -> dict:
         """
         The parse function takes the result page and fixtures page as input,
             parses them and returns a dictionary with three keys:
@@ -18,12 +18,13 @@ class ResultParser:
 
         results = self._parse_results(result_page)
         fixtures = self._parse_results(fixtures_page)
-        if fixtures:
-            is_all_ids_parsed = True if fixtures["total_tours"] == fixtures["games"][-1]["tour"] else False
-        else:
-            is_all_ids_parsed = True if results["total_tours"] == results["games"][-1]["tour"] else False
+        is_finished = False
+        if fixtures["games"]:
+            is_finished = True if fixtures["total_tours"] == fixtures["games"][-1]["tour"] else False
+        elif results["games"]:
+            is_finished = True if results["total_tours"] == results["games"][-1]["tour"] else False
 
-        return {"is_all_ids_parsed": is_all_ids_parsed, "results": results, "fixtures": fixtures}
+        return {"is_all_ids_parsed": is_finished, "results": results, "fixtures": fixtures}
 
     @staticmethod
     def _parse_results(result_page: str) -> dict:
@@ -36,7 +37,14 @@ class ResultParser:
             games = []
             match_count = 0
 
-            for row in soup("div", class_="box-overflow")[1].find_all("tr", class_="")[:-1]:
+            blocks = soup("div", class_="box-overflow")
+            rows = []
+            for idx in range(0, len(blocks)):
+                rows = blocks[idx].find_all("tr", class_="")
+                if rows:
+                    break
+            # print(soup("div", class_="box-overflow")[3].find_all("tr", class_=""))
+            for row in rows:
                 if tour_block := row.find("th"):
                     tour = int(tour_block.text.split(".")[0])
                     if match_count and not total_tours:
